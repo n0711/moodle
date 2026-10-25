@@ -55,6 +55,7 @@ list($options, $unrecognized) = cli_get_params(
         'lang'                      => $lang,
         'maintenance'               => true,
         'non-interactive'           => false,
+        'purge-caches'              => false,
         'set-ui-upgrade-lock'       => false,
         'unset-ui-upgrade-lock'     => false,
         'verbose-settings'          => false,
@@ -101,6 +102,9 @@ Options:
                             RECOMMENDED for lightweight deployments, to allow for a graceful purge and
                             rebuild of the cache.
 --non-interactive           No interactive questions or confirmations.
+--purge-caches              Purge all caches even if no database upgrade is required.
+                            Ignored by --is-pending and --is-maintenance-required.
+                            Cannot be combined with --no-maintenance or --maintenance=false.
 --set-ui-upgrade-lock       Sets the upgrade to CLI only and unable to be triggered from the frontend.
                             If called with --maintenance=false, the lock WILL NOT be released when the
                             upgrade finishes, and MUST be manually removed.
@@ -119,6 +123,20 @@ Example:
 
     echo $help;
     die;
+}
+
+$purgecaches = filter_var($options['purge-caches'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+if ($purgecaches === null) {
+    cli_error(get_string('cliincorrectvalueerror', 'admin', (object) [
+        'option' => '--purge-caches',
+        'value' => $options['purge-caches'],
+    ]));
+}
+
+$checkonly = $options['is-pending'] || $options['is-maintenance-required'];
+if ($purgecaches && !filter_var($options['maintenance'], FILTER_VALIDATE_BOOLEAN) && !$checkonly) {
+    // Rolling deployments must defer cache purging until user traffic has moved to the new code.
+    cli_error(get_string('cliupgradepurgecachesmaintenance', 'admin'));
 }
 
 if (empty($CFG->version)) {
@@ -161,11 +179,18 @@ if (!$options['maintenance']) {
 
 // We should ignore all upgrade locks here.
 if (!moodle_needs_upgrading(false)) {
+    if ($purgecaches && !$checkonly) {
+        // Code-only deployments can still leave stale caches. CACHE_DISABLE_ALL is set above,
+        // so use the config writer to purge configured MUC stores before the remaining caches.
+        cache_helper::purge_all(true);
+        purge_all_caches();
+        cli_writeln(get_string('purgecachesfinished', 'admin'));
+    }
     cli_error(get_string('cliupgradenoneed', 'core_admin', $newversion), 0);
 }
 
 // Handle exit based options for outputting upgrade state.
-if ($options['is-pending'] || $options['is-maintenance-required']) {
+if ($checkonly) {
     // If we aren't doing a maintenance check, plain pending check.
     if (!$options['is-maintenance-required']) {
         cli_error(get_string('cliupgradepending', 'core_admin'), 2);
