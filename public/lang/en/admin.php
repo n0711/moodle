@@ -159,6 +159,7 @@ $string['cliupgrademaintenancenotrequired'] = 'This upgrade WILL NOT result in m
 $string['cliupgrademaintenancerequired'] = 'This upgrade WILL result in maintenance mode for users.';
 $string['cliupgradenoneed'] = 'No upgrade needed for the installed version {$a}. Thanks for coming anyway!';
 $string['cliupgradepending'] = 'An upgrade is pending';
+$string['cliupgradepurgecachesmaintenance'] = 'The --purge-caches option cannot be combined with --no-maintenance or --maintenance=false. Purge caches after user traffic has moved to the new code using admin/cli/purge_caches.php.';
 $string['cliupgradesetlock'] = 'Upgrade has been locked to Command Line Interface (CLI) execution only.';
 $string['cliupgradeunsetlock'] = 'Existing Command Line Interface (CLI) execution upgrade lock has been removed.';
 $string['cliyesnoprompt'] = 'type y (means yes) or n (means no)';
