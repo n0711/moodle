@@ -1,0 +1,39 @@
+name: Cache CLI regression tests
+
+on:
+  push:
+    paths:
+      - 'admin/cli/purge_caches.php'
+      - 'admin/cli/upgrade.php'
+      - 'admin/cli/tests/cache_commands_test.php'
+      - 'public/lib/clilib.php'
+      - '.github/workflows/cache-cli.yml'
+  pull_request:
+    paths:
+      - 'admin/cli/purge_caches.php'
+      - 'admin/cli/upgrade.php'
+      - 'admin/cli/tests/cache_commands_test.php'
+      - 'public/lib/clilib.php'
+      - '.github/workflows/cache-cli.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  cache-cli:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        php: ['8.3', '8.4']
+    steps:
+      - uses: actions/checkout@v6
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: Check syntax and execute isolated CLI cases
+        run: |
+          php -n -l admin/cli/purge_caches.php
+          php -n -l admin/cli/upgrade.php
+          php -n -l admin/cli/tests/cache_commands_test.php
+          php -n admin/cli/tests/cache_commands_test.php
