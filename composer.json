@@ -104,7 +104,7 @@
     },
     "config": {
         "audit": {
-            "block-insecure": false
+            "block-insecure": true
         }
     }
 }
